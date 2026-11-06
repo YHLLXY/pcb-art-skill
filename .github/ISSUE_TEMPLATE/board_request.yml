@@ -1,0 +1,33 @@
+name: 想做一块板
+description: 报个需求，我会先给你填问卷
+labels: ["board-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        我不会替你决定板子上写什么字。先回答下面 8 条，答不上来的写"待确认"就行。
+  - type: input
+    id: who
+    attributes:
+      label: 给谁、什么场合
+    validations: { required: true }
+  - type: input
+    id: size
+    attributes:
+      label: 尺寸与用途（挂起来 / 摆着 / 随身带）
+    validations: { required: true }
+  - type: textarea
+    id: elements
+    attributes:
+      label: 必须有的元素（徽记、校名、日期、人名…）
+      description: 每项都尽量写"放哪、多大"，写不出来就写"不知道"
+    validations: { required: true }
+  - type: textarea
+    id: ref
+    attributes:
+      label: 有没有参考板/参考图
+      description: 有 Gerber 最好（能逐层量）；只有照片也行，但量不出精确数字
+  - type: input
+    id: deadline
+    attributes:
+      label: 什么时候要、几块

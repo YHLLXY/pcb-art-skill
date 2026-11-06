@@ -1,0 +1,38 @@
+name: 板子有问题 / Bug
+description: 板子上某处不对，或者脚本跑挂了
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先说一句：**"看起来不对"很难查**。请尽量给数字（哪一行、多少 mm、多少 %）。
+  - type: textarea
+    id: what
+    attributes:
+      label: 实际看到什么
+      placeholder: 例如：织纹吻合度 55.6%，但我的板子和参考板是同一套参数
+    validations: { required: true }
+  - type: textarea
+    id: expect
+    attributes:
+      label: 期望是什么
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: 怎么复现
+      description: 命令、spec 片段、或哪张参考图
+      render: shell
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      placeholder: Windows 11 / Python 3.12 / EDA 专业版 4.1.78
+    validations: { required: true }
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 卡在哪个阶段
+      options: [P0.5 访谈, P1 解码参考板, P2 版式, P3 矢量, P4 落 EDA, P4.5 3D 验收, P5 导出复核, 其他]
+    validations: { required: true }
