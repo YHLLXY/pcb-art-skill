@@ -1,0 +1,89 @@
+{
+  "name": "layoutB-left-image-right-text",
+  "note": "左图右字：右侧三行短句，适合『姓名 + 日期 + 一句话』这种信息条",
+  "board": {
+    "w": 86.2,
+    "h": 54.2,
+    "r": 3.5
+  },
+  "frame": {
+    "w": 86.2,
+    "h": 54.2,
+    "r": 3.5,
+    "cu": 1,
+    "mask": 1.1
+  },
+  "weave": {
+    "clip": [
+      42.55,
+      25.55
+    ],
+    "r": 2.9
+  },
+  "badge": {
+    "png": "../../examples/uestc70/badge.png",
+    "d": 26,
+    "cx": -22,
+    "cy": 2,
+    "mode": "disc",
+    "upsample": 3,
+    "step": 0.0125,
+    "r_out_px": 510.7,
+    "r_in_px": 318,
+    "minw": 0.15,
+    "mask_expand": 0.05
+  },
+  "texts": [
+    {
+      "s": "求实求真",
+      "font": "xingkai",
+      "width": 24,
+      "cx": 22,
+      "cy": 13,
+      "step": 0.06,
+      "minw": 0.14,
+      "layer": 1,
+      "mask_layer": 5
+    },
+    {
+      "s": "大气大为",
+      "font": "xingkai",
+      "width": 24,
+      "cx": 22,
+      "cy": 3,
+      "step": 0.06,
+      "minw": 0.14,
+      "layer": 1,
+      "mask_layer": 5
+    },
+    {
+      "s": "一九五六",
+      "font": "xingkai",
+      "width": 24,
+      "cx": 22,
+      "cy": -7,
+      "step": 0.06,
+      "minw": 0.14,
+      "layer": 1,
+      "mask_layer": 5
+    }
+  ],
+  "strings": [
+    {
+      "layer": 3,
+      "text": "C H E N G D U   ·   C H I N A",
+      "size": 52,
+      "x": -880,
+      "y": -1000,
+      "sw": 6.5
+    }
+  ],
+  "holes": [
+    {
+      "x": 39.3,
+      "y": 23.4,
+      "d": 3,
+      "pad": 4
+    }
+  ]
+}

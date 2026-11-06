@@ -1,0 +1,75 @@
+{
+  "name": "layoutA-badge-centered",
+  "note": "徽记居中：最稳的一种，信息量中等，适合纪念牌 / 校庆板",
+  "board": {
+    "w": 86.2,
+    "h": 54.2,
+    "r": 3.5
+  },
+  "frame": {
+    "w": 86.2,
+    "h": 54.2,
+    "r": 3.5,
+    "cu": 1,
+    "mask": 1.1
+  },
+  "weave": {
+    "clip": [
+      42.55,
+      25.55
+    ],
+    "r": 2.9
+  },
+  "badge": {
+    "png": "../../examples/uestc70/badge.png",
+    "d": 30,
+    "cx": 0,
+    "cy": 8,
+    "mode": "disc",
+    "upsample": 3,
+    "step": 0.0125,
+    "r_out_px": 510.7,
+    "r_in_px": 318,
+    "minw": 0.15,
+    "mask_expand": 0.05
+  },
+  "texts": [
+    {
+      "s": "电子科技大学",
+      "font": "xingkai",
+      "width": 40,
+      "cx": 0,
+      "cy": -12.5,
+      "step": 0.06,
+      "minw": 0.14,
+      "layer": 1,
+      "mask_layer": 5
+    }
+  ],
+  "strings": [
+    {
+      "layer": 1,
+      "text": "1956 — 2026",
+      "size": 139,
+      "x": -410,
+      "y": -835,
+      "sw": 6.5
+    },
+    {
+      "layer": 3,
+      "text": "UNIVERSITY OF ELECTRONIC SCIENCE AND TECHNOLOGY OF CHINA",
+      "size": 52,
+      "x": -883,
+      "y": -940,
+      "sw": 6.5
+    }
+  ],
+  "holes": [
+    {
+      "x": 39.3,
+      "y": 23.4,
+      "d": 3,
+      "pad": 4
+    }
+  ]
+}

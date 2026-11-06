@@ -1,0 +1,11 @@
+# 统一按 LF 存，避免 Windows 上提交 CRLF 导致别人 diff 全是换行
+* text=auto eol=lf
+
+# 二进制：不要做换行/文本处理
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.zip binary
+*.epcb2 -text
+*.gbr binary

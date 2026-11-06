@@ -1,0 +1,58 @@
+{
+  "name": "layoutC-bleed",
+  "note": "满幅出血：金带比板框大 2 mm（切掉），徽记放大到 φ40——最『满』的一种",
+  "board": {
+    "w": 86.2,
+    "h": 54.2,
+    "r": 3.5
+  },
+  "frame": {
+    "w": 90,
+    "h": 58,
+    "r": 3.5,
+    "cu": 1,
+    "mask": 1.1
+  },
+  "weave": {
+    "clip": [
+      42.55,
+      25.55
+    ],
+    "r": 2.9
+  },
+  "badge": {
+    "png": "../../examples/uestc70/badge.png",
+    "d": 40,
+    "cx": 0,
+    "cy": 4,
+    "mode": "disc",
+    "upsample": 3,
+    "step": 0.0125,
+    "r_out_px": 510.7,
+    "r_in_px": 318,
+    "minw": 0.15,
+    "mask_expand": 0.05
+  },
+  "texts": [
+    {
+      "s": "电子科技大学",
+      "font": "xingkai",
+      "width": 44,
+      "cx": 0,
+      "cy": -21,
+      "step": 0.06,
+      "minw": 0.14,
+      "layer": 1,
+      "mask_layer": 5
+    }
+  ],
+  "strings": [],
+  "holes": [
+    {
+      "x": 41,
+      "y": 25,
+      "d": 3,
+      "pad": 4
+    }
+  ]
+}

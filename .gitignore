@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 生成物（examples 里的中间文件不进仓库，成片 Gerber/预览图要进）
+examples/*/out/
+examples/*/gen/*.epcb2
+
+# 临时
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
