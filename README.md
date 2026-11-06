@@ -1,7 +1,7 @@
 [![tests](https://github.com/YHLLXY/pcb-art-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/YHLLXY/pcb-art-skill/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
-[![tests](https://img.shields.io/badge/tests-21-brightgreen.svg)](tests)
+[![tests](https://img.shields.io/badge/tests-25-brightgreen.svg)](tests)
 
 # gift-pcb
 
@@ -83,7 +83,7 @@ examples/uestc70/     一块完整样例：spec + 徽记图 + gerber.zip + 验�
 templates/blank/      最小模板工程（147 条：层定义/规则/板框，没有图形）
 templates/问卷.md     P0.5 八问 + 元素清单，未确认项不许进 P2
 templates/layouts/    三个版式（徽记居中 / 左图右字 / 满幅出血）+ 24 px/mm 示意
-tests/                21 条测试：金板复现 / 织纹 / 自检 / 徽记解码 / 素材链路 / 下单包
+tests/                25 条测试：金板复现 / 织纹 / 自检 / 徽记解码 / 素材链路 / 下单包
 AGENTS.md             agent 进仓库先读这个（改脚本的规矩）
 CONTRIBUTING.md       报问题、加样例、不许提交的东西
 ```
@@ -141,7 +141,7 @@ Numbers in the docs are measured, not estimated; `references/04` is a 118-entry 
 ## 测试
 
 ```bash
-python -m pytest tests -q          # 21 条，全部跑完约 11 s
+python -m pytest tests -q          # 25 条，全部跑完约 13 s
 ```
 
 | 测试 | 锁的是什么 |
@@ -151,6 +151,7 @@ python -m pytest tests -q          # 21 条，全部跑完约 11 s
 | `test_check` | 拿金板跑 `13-check`：必须全绿；再拿只有板框的空板跑，必须报 FAIL 且退出码 1 |
 | `test_decode` | 徽记解码：蓝/橙的 UESTC 徽记与「红盘+金内圆」的合成图都必须判成圆盘型（不靠写死色值） |
 | `test_assets` | 素材链路：本地目录 → 图墙；300 px 暗底图必须被剔，且理由要写出来 |
+| `test_preview` | spec 预览：尺寸、徽记盘心是金的、盘的外接框 φ30 且居中（坐标约定写错就红）、空白处是暗的 |
 | `test_pack_order` | 下单包 MANIFEST：生成 / 回验 / 改一个字节必须红 / 多一个文件必须红 / 缺必需文件必须红 |
 
 **测试只覆盖离线段。** EDA 里那一段（写 `.epcb2` → 导出 Gerber）没法自动化：
