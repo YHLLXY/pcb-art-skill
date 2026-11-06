@@ -1,6 +1,6 @@
 ---
 name: gift-pcb
-description: Use when 要做一块只有美术、没有电路的 PCB（生日卡、纪念牌、校徽板、异形展示板、挂饰挂绳牌），或要复用某块现成纪念板的视觉语言与工艺（哑黑阻焊 + 沉金、编织纹、白丝印），在嘉立创 / EasyEDA 专业版上从零做到能下单；也适用于"参考板看起来是金/黑/白，我复刻出来不像"这类排查。不适用于需要 BOM、布线、贴片的功能板。
+description: Use when 要做一块只有美术、没有电路的 PCB（生日卡、纪念牌、校徽板、异形展示板、挂饰挂绳牌），或要复用某块现成纪念板的视觉语言与工艺（哑黑阻焊 + 沉金、编织纹、白丝印），在嘉立创 / EasyEDA 专业版上从零做到能下单；也适用于"参考板看起来是金/黑/白，我复刻出来不像"这类排查。不适用于需要 BOM、布线、贴片的功能板。 English triggers: decorative PCB, PCB art, artwork-only PCB, silkscreen artwork, matte black solder mask + ENIG, commemorative / anniversary board, school emblem board, basket-weave copper texture, JLCPCB-ready Gerber.
 ---
 
 # 纪念展示板（gift-pcb）

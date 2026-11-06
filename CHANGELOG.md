@@ -1,7 +1,23 @@
 # CHANGELOG
 
-## v0.1.0 — 2026-11-06
+## v0.1.1 — 2026-11-06（发布前补的口子）
 
+补的是一个陌生人 clone 下来会卡住的地方，不是新功能。
+
+### 新增
+
+- `requirements.txt` / `requirements-dev.txt`：依赖只有 numpy + pillow（测试再要 pytest），之前 README 没写，得靠猜
+- `AGENTS.md`：agent 进仓库先读这个 —— 改脚本前先跑测试存基线、红了不许改断言、新坑往前加编号
+- `CONTRIBUTING.md`：报问题给数字、加样例要带齐六样、**不许提交字体/大 epcb2/在期商业 IP**
+- `tests/test_pack_order.py` 四条：MANIFEST 生成 / 回验一致 / 改一个字节必须红 / 多一个文件必须红 / 缺必需文件必须红 → 测试总数 17 → **21**
+- README 加 `Quick start (EN)`（英文读者三行跑通）
+- `SKILL.md` 的 description 补英文触发词（decorative PCB, PCB art, silkscreen artwork, matte black + ENIG…），英文语境下才会被调用
+
+### 改
+
+- README 的测试说明、徽章数字同步到 21
+
+## v0.1.0 — 2026-11-06
 第一次按「能被别人用起来」的标准收尾。内容来自四轮实战：李欣雨生日板（川农）、重庆邮电测试板、电子科大 70 周年板。
 
 ### 新增
