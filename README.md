@@ -86,6 +86,21 @@ templates/layouts/    三个版式（徽记居中 / 左图右字 / 满幅出血�
 tests/                金板复现 / 织纹 / 自检脚本本身的测试
 ```
 
+## 安装（当成 agent skill 用）
+
+skill 靠**目录名**识别：目录必须叫 `gift-pcb`（= `SKILL.md` 里的 `name`），仓库名可以叫别的。
+
+```bash
+# DSH
+git clone git@github.com:YHLLXY/pcb-art-skill.git ~/.dsh/skills/gift-pcb
+# Claude Code
+git clone git@github.com:YHLLXY/pcb-art-skill.git ~/.claude/skills/gift-pcb
+```
+
+克隆下来的目录带 `.git`，以后 `git pull` 就能升级；不想留仓库就把 `.git` 删掉。
+
+**只想跑脚本、不当 skill 用**：随便 clone 到哪都行，直接 `python scripts/13-check.py ...`。
+
 ## 快速开始
 
 ```bash
