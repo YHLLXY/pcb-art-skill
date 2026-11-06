@@ -1,0 +1,47 @@
+name: release
+
+# 打 tag 就出一个 Release，自动挂上「一片能直接下单的包」：
+# 光绘 + 验收单 + 说明。这样别人不用 clone 也能拿到文件。
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 组装下单包
+        run: |
+          set -e
+          mkdir -p out/UESTC70
+          cp examples/uestc70/gerber.zip out/UESTC70/UESTC70_gerber.zip
+          cp examples/uestc70/验收单.md out/UESTC70/验收单.md
+          cp examples/uestc70/preview/front3d.png out/UESTC70/front3d.png
+          cp examples/uestc70/preview/back3d.png out/UESTC70/back3d.png
+          cp examples/uestc70/preview/badge-60ppm.png out/UESTC70/badge-60ppm.png
+          cp assets/weave-80ppm.png out/UESTC70/weave-80ppm.png
+          cp CHANGELOG.md LICENSE out/UESTC70/
+          python -m pip install --quiet numpy pillow
+          python scripts/19-pack_order.py out/UESTC70 --require 验收单 >/dev/null
+          cd out && zip -qr ../uestc70-package-${GITHUB_REF_NAME}.zip UESTC70
+          cat UESTC70/MANIFEST.txt | head -6
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: uestc70-package-*.zip
+          generate_release_notes: true
+          body: |
+            ## 下载
+
+            `uestc70-package-*.zip` = 一块可以直接下单的板：
+            光绘 zip、验收单、3D 正/背、徽记 60 px/mm、织纹 80 px/mm、MANIFEST.txt（sha256）。
+
+            解压后 `python scripts/19-pack_order.py UESTC70 --verify` 可回验是否完整。
+
+            下单参数：2 层 / 1.6 mm / 哑黑阻焊 / **沉金 ENIG（必须选）** / 白色丝印。
