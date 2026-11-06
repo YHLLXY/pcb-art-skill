@@ -1,3 +1,8 @@
+[![tests](https://github.com/YHLLXY/pcb-art-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/YHLLXY/pcb-art-skill/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
+[![tests](https://img.shields.io/badge/tests-17-brightgreen.svg)](tests)
+
 # gift-pcb
 
 **Design decorative PCBs — birthday cards, school emblems, keychains, badge boards — from a reference photo to a JLCPCB-ready Gerber package.**

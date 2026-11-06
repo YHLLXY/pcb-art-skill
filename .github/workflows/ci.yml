@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    name: ${{ matrix.os }} · py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: install
+        run: python -m pip install --upgrade pip numpy pillow pytest
+      - name: pytest
+        run: python -m pytest tests -q -rs
+
+      # 只跑离线段：EDA 导出没法在 CI 里点，README「测试」一节写明了这一点
+      - name: 仓库体检（不许带字体/不许带商业字体路径以外的期望）
+        shell: bash
+        run: |
+          set -e
+          if git ls-files | grep -Ei '\.(ttf|otf|ttc|woff2?)$'; then
+            echo "::error::仓库里不许提交字体文件"; exit 1
+          fi
+          echo "ok: no font binaries"
