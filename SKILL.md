@@ -87,7 +87,8 @@ description: Use when 要做一块只有美术、没有电路的 PCB（生日卡
 - `preview/v<n>_front3d.png` / `v<n>_back3d.png`：`14-render3d.py` 出的伪 3D（哑黑浮雕 + 金反光），给用户做 P4.5 验收
 - `docs/03-当前状态.md`：层统计、几何参数、已定不动项、待定项
 - `docs/验收单.md`：`13-check.py --md` 生成的实测表 + P4.5 十四项勾选（**每块板一份，别口头问**）
-- **下单包**：Gerber + 预览图 + 工程源文件 + `下单说明.txt`（含实测数据与已知风险）+ `MANIFEST.txt`
+- **下单包**：Gerber + 预览图 + **完整工程目录**的压缩包（`.eprj3` + `pcb/` + `sch/` + `panel/`，
+  只给 `pcb/*.epcb2` 打不开；EDA 专用券也要求工程文件，见 `04` 第 144 条）+ `下单说明.txt` + `MANIFEST.txt`
   （`scripts/19-pack_order.py` 出 sha256，解压后 `--verify` 回验一致才下单）
 
 ## 自检（每次交付前，缺一不可）
