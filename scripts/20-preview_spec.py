@@ -8,7 +8,8 @@ spec → .epcb2 之后，把里面的 FILL/POLY/STRING 按层画成位图：
 真正的材质/浮雕看 `14-render3d.py`（要 Gerber）。
 
 用法:
-  python 20-preview_spec.py <spec.json> <模板工程目录> <out.png> [--sc 20] [--side front|back]
+  python 20-preview_spec.py <spec.json> <模板工程目录> <out.png> [--sc 20] [--side front|back] [--flip]
+                            [--crop x0,y0,x1,y1]   # 局部：--sc 60 --crop -5,20,15,40
 """
 import json, os, re, subprocess, sys
 from PIL import Image, ImageDraw
@@ -22,7 +23,7 @@ except Exception:
 HERE = os.path.dirname(os.path.abspath(__file__))
 K = 0.0254
 
-def main(spec_path, tpl_dir, out_png, sc=20.0, side="front"):
+def main(spec_path, tpl_dir, out_png, sc=20.0, side="front", flip=False, crop=None):
     os.makedirs(os.path.dirname(os.path.abspath(out_png)), exist_ok=True)
     tmp = os.path.join(os.path.dirname(os.path.abspath(out_png)), "_preview.epcb2")
     r = subprocess.run([sys.executable, os.path.join(HERE, "16-build_board.py"),
@@ -35,6 +36,8 @@ def main(spec_path, tpl_dir, out_png, sc=20.0, side="front"):
     W = float(spec.get("frame", {}).get("w") or spec["board"]["w"]) + 8.0
     H = float(spec.get("frame", {}).get("h") or spec["board"]["h"]) + 8.0
     X0, Y0 = -W / 2.0, H / 2.0
+    if crop:                                  # --crop x0,y0,x1,y1（mm）出 60 px/mm 局部图
+        X0, Y0, W, H = crop[0], crop[3], crop[2] - crop[0], crop[3] - crop[1]
     im = Image.new("RGB", (int(W * sc), int(H * sc)), (26, 26, 28))
     d = ImageDraw.Draw(im)
     # 层 → 颜色（按"成品外观"而不是按层名）
@@ -78,10 +81,14 @@ def main(spec_path, tpl_dir, out_png, sc=20.0, side="front"):
             rhs = o["path"]
             if rhs and isinstance(rhs[0], list): rhs = rhs[0]
             if not isinstance(rhs, list) or rhs[0] != "R" or len(rhs) < 7: continue
-            # FILL 的 R 路径是 [left, y_center, w, h, rot, r]
-            l, cy = rhs[1] * K, rhs[2] * K
+            # FILL 的 R 路径和 POLY 一样是 [left, top, w, h, rot, r] —— 第二值是上边，不是中线。
+            # 这条是拿 v10 的 Gerber 逐像素投票投出来的（top 口径 IoU 0.914 / center 0.509），
+            # 写成 center 会让所有合并过的长块整体上移半个高度（0.06 的行看不出来，2 mm 的块差 1 mm）。
+            l, t = rhs[1] * K, rhs[2] * K
             w, h = rhs[3] * K, rhs[4] * K
-            box = [P(l, cy + h / 2.0), P(l + w, cy - h / 2.0)]
+            box = [P(l, t), P(l + w, t - h)]
+            # 外扩 0.5 px：扫描线相邻两行在低分辨率下会漏出一条亚像素缝（假缺陷）
+            box = [box[0][0] - 0.5, box[0][1] - 0.5, box[1][0] + 0.5, box[1][1] + 0.5]
             tgt = cu_layer if lay == CU else (mk_layer if lay == MASK else sk_layer)
             ImageDraw.Draw(tgt).rectangle(box, fill=255)
         elif t == "STRING":
@@ -117,15 +124,21 @@ def main(spec_path, tpl_dir, out_png, sc=20.0, side="front"):
             elif cu[x, y] > 0:    px[x, y] = (40, 36, 32)
     try: os.remove(tmp)
     except OSError: pass
+    if flip:                      # 背面：翻过来看，字才是正的（数据本身是镜像的）
+        im = im.transpose(Image.FLIP_LEFT_RIGHT)
     im.save(out_png)
-    print("preview ->", out_png, "%dx%d @ %.0f px/mm" % (im.width, im.height, sc))
+    print("preview ->", out_png, "%dx%d @ %.0f px/mm%s" % (
+        im.width, im.height, sc, "  (mirrored)" if flip else ""))
 
 if __name__ == "__main__":
     a = sys.argv[1:]
     if len(a) < 3:
         print(__doc__); sys.exit(2)
-    sc = 20.0; side = "front"
+    sc = 20.0; side = "front"; flip = False; crop = None
     if "--sc" in a: i = a.index("--sc"); sc = float(a[i + 1]); del a[i:i + 2]
     if "--side" in a:
         i = a.index("--side"); side = a[i + 1]; del a[i:i + 2]
-    main(a[0], a[1], a[2], sc, side)
+    if "--flip" in a: i = a.index("--flip"); flip = True; del a[i]
+    if "--crop" in a:
+        i = a.index("--crop"); crop = [float(v) for v in a[i+1].split(",")]; del a[i:i+2]
+    main(a[0], a[1], a[2], sc, side, flip, crop)

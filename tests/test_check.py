@@ -22,9 +22,12 @@ def test_no_fail(checked):
 
 
 def test_known_numbers(checked):
+    # 2026-11-07：04-gerber_raster 改成"弧线每个折点都画圆"（PIL 宽线不补接头）后，
+    # 金带圆角的缺口被补上，这块板的沉金从 22.46% 变成 22.50%（面积 1049.94 -> 1052.15）。
+    # 新数字才是对的：旧的那次把圆角的缺口也当成"没有铜"量掉了。
     out = checked.stdout
-    assert "22.46%" in out          # 沉金（正金∪背金 ÷ 板框）
-    assert "1049.94" in out         # 面积
+    assert "22.50%" in out          # 沉金（正金∪背金 ÷ 板框）
+    assert "1052.15" in out         # 面积
     assert "100.0%" in out          # 织纹吻合度
     assert "0.120" in out           # 最小铜宽 p5
     assert "全绿" in out

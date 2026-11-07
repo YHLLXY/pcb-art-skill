@@ -68,7 +68,8 @@ for ln in txt.split('\n'):
         while a1>=a0: a1-=2*math.pi
     else:
         while a1<=a0: a1+=2*math.pi
-    n=24; path=[]
+    # 段数按弧长定，别用固定 24 段：r=0.5 的小圆角会糊，r=30 的大弧会折
+    n=max(8,int(abs(a1-a0)*r*SC/3.0)); path=[]
     for i in range(n+1):
         a=a0+(a1-a0)*i/n
         path.append(to_px(cx+r*math.cos(a),cy+r*math.sin(a)))
@@ -78,7 +79,9 @@ for ln in txt.split('\n'):
         wpx=max(1,int(round(ap[1][0]*SC)))
         dr.line(path,fill=255,width=wpx)
         r0=wpx/2.0
-        for (px,py) in (path[0],path[-1]):
+        # PIL 的宽多段线**不补接头**：只在首尾画圆，折点处会留下扇形缺口
+        # （金带的圆角会被看成"锯齿"、最小线宽会被量成 0.02）。每个折点都要画圆。
+        for (px,py) in path:
             dr.ellipse([px-r0,py-r0,px+r0,py+r0],fill=255)
     X,Y=nx,ny
 im.save(out); print('saved',out)

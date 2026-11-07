@@ -43,6 +43,9 @@ description: Use when 要做一块只有美术、没有电路的 PCB（生日卡
 | **开工前该问用户什么（可填的表）** | `templates/问卷.md` |
 | **不知道版式怎么排** | `templates/layouts/`（三个模板 + 24 px/mm 示意） |
 | **想先看一眼 spec 长什么样（不开 EDA）** | `scripts/20-preview_spec.py` |
+| **手绘涂鸦 / 签名整张上板** | `references/03`「十一」（spec 的 `arts` / `dots` / `board`） |
+| **要一张 ≥60 px/mm 的局部图** | `scripts/20-preview_spec.py --sc 60 --crop x0,y0,x1,y1` |
+| **背面 3D 图的字是反的** | `scripts/14-render3d.py --flip-back`（不翻 = 从正面透过板子看） |
 | 写 EasyEDA 专业版的 CLI/JS 调用 | `references/03-EDA落地.md` |
 | **不想一条条注图元（直接写 .epcb2）** | `references/03-EDA落地.md` 第八节 |
 | **徽记是实心色块 + 挖空白字（圆盘型）** | `references/02-制造性与矢量.md`「徽记有两种原型」 |

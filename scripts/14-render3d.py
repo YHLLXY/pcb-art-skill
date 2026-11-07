@@ -10,7 +10,7 @@
 输出:
   <前缀>_front3d.png / <前缀>_back3d.png
 """
-import os, sys, subprocess, tempfile, math
+import os, re, sys, subprocess, tempfile, math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -27,6 +27,7 @@ def opt(name, default):
     return default
 D   = ARGV[0]
 PFX = ARGV[1]
+FLIPB = os.environ.get("R3D_FLIP_BACK", "0")
 SC  = float(opt("--sc", "30"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAST = os.path.join(HERE, "04-gerber_raster.py")
@@ -54,6 +55,27 @@ def L(k, sc, x0, y0, w, h):
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return np.array(Image.open(out).convert("L")) > 128
 
+def read_drl(path):
+    """Excellon 钻孔：返回 [(x_mm, y_mm, d_mm)]。不画孔的话 φ3 挂绳孔会渲染成一块实心金。"""
+    dia, cur, out = {}, None, []
+    for ln in open(path, encoding="utf-8", errors="ignore"):
+        ln = ln.strip()
+        mt = re.match(r"^T(\d+)C([\d.]+)", ln)
+        if mt:
+            dia[int(mt.group(1))] = float(mt.group(2)); continue
+        mt = re.match(r"^T(\d+)$", ln)
+        if mt:
+            cur = dia.get(int(mt.group(1))); continue
+        mt = re.match(r"^X(-?[\d.]+)Y(-?[\d.]+)", ln)
+        if mt and cur:
+            out.append((float(mt.group(1)), float(mt.group(2)), cur))
+    return out
+
+DRL = None
+for f in files:
+    if f.lower().endswith(".drl"): DRL = os.path.join(D, f); break
+HOLES = read_drl(DRL) if DRL else []
+
 # 先在大窗口里定位板框（mm），再按 SC 精确重栅格化
 gko0 = L("GKO", 10, -100, 100, 200, 200)
 ys, xs = np.nonzero(gko0)
@@ -70,13 +92,20 @@ a0 = px(bx0, by1); a1 = px(bx1, by0)
 ImageDraw.Draw(board).rounded_rectangle((a0[0], a0[1], a1[0], a1[1]), radius=int(3.5*SC), fill=255)
 board = np.asarray(board) > 0
 
-def shade(cu, op, silk, name):
-    cuM   = (cu if cu is not None else np.zeros_like(board)) & board
-    opM   = (op if op is not None else np.zeros_like(board)) & board
-    silkM = (silk if silk is not None else np.zeros_like(board)) & board
+hmask = Image.new("L", (w, h), 0)
+_hd = ImageDraw.Draw(hmask)
+for (hx, hy, hd_) in HOLES:
+    c = px(hx, hy); r = hd_ * SC / 2.0
+    _hd.ellipse([c[0]-r, c[1]-r, c[0]+r, c[1]+r], fill=255)
+HOLES_M = np.asarray(hmask) > 0
+
+def shade(cu, op, silk, name, flip=False):
+    cuM   = (cu if cu is not None else np.zeros_like(board)) & board & ~HOLES_M
+    opM   = (op if op is not None else np.zeros_like(board)) & board & ~HOLES_M
+    silkM = (silk if silk is not None else np.zeros_like(board)) & board & ~HOLES_M
     gold  = cuM & opM
     white = silkM & ~gold
-    black = board & ~gold & ~white
+    black = board & ~gold & ~white & ~HOLES_M
     # 高度场：铜 35um，丝印 20um，开窗处下沉（凹陷）1.5um
     Hf = (cuM.astype(np.float32)*0.035) + (silkM.astype(np.float32)*0.020)
     Hf = Hf - (opM & ~cuM).astype(np.float32)*0.004
@@ -119,9 +148,21 @@ def shade(cu, op, silk, name):
     edge = board & ~np.asarray(Image.fromarray((board*255).astype(np.uint8))
                                .filter(ImageFilter.MinFilter(5))).astype(bool)
     out[edge] = out[edge]*0.55 + 0.12
+    # 通孔：近黑 + 孔口一圈微亮（否则看着像贴上去的黑圆片）
+    if HOLES_M.any():
+        er = np.asarray(Image.fromarray((HOLES_M*255).astype(np.uint8))
+                        .filter(ImageFilter.MinFilter(max(3, int(0.25*SC) | 1)))).astype(bool)
+        rim = HOLES_M & ~er
+        out[HOLES_M] = np.array([0.016, 0.016, 0.019])
+        out[rim] = out[rim]*0.45 + 0.05
+    if flip:
+        out = out[:, ::-1]
     img8 = (np.clip(out, 0, 1)**(1/1.05)*255).astype(np.uint8)
     Image.fromarray(img8).save(name)
     print("saved", name, "gold %.2f%% silk %.2f%%" % (100*gold.sum()/board.sum(), 100*white.sum()/board.sum()))
 
 shade(m["GTL"], m["GTS"], m["GTO"], PFX + "_front3d.png")
-shade(m["GBL"], m["GBS"], m["GBO"], PFX + "_back3d.png")
+# 背面默认"从正面透过板子看"（= Gerber 原始朝向）。加 --flip-back 或 R3D_FLIP_BACK=1
+# 才是"把板子翻过来看背面"，验收时用这个，否则右边的字全是反的。
+shade(m["GBL"], m["GBS"], m["GBO"], PFX + "_back3d.png",
+      flip=("--flip-back" in ARGV) or (FLIPB == "1"))
