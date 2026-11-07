@@ -245,30 +245,33 @@ if WEAVE:
     rows.append(("织纹覆盖率", "%.1f%%" % cov, "INFO", "参考板 56%，只作参考不判定"))
     # 工艺下限：线宽和间隙都必须 >= 0.10 mm。
     # 李欣雨那块板写的是 0.103/0.195（间隙 0.092），比样板细 13%，蚀刻直接吃掉 → 织纹没印出来。
-    # 光栅上量一次就能抓住，所以这条必须有牙。
-    def _runs(v):
-        idx = np.nonzero(v)[0]
-        if not len(idx):
-            return [], []
-        ln, gp, st, pv = [], [], idx[0], idx[0]
-        for x in idx[1:]:
-            if x == pv + 1:
-                pv = x
-            else:
-                ln.append(pv - st + 1); gp.append(x - pv - 1); st = pv = x
-        ln.append(pv - st + 1)
-        return ln, gp
-    lw_, gp_ = [], []
-    for r in range(0, cu.shape[0], 5):
-        x, y = _runs(cu[r]); lw_ += x; gp_ += y
-    for c in range(0, cu.shape[1], 5):
-        x, y = _runs(cu[:, c]); lw_ += x; gp_ += y
-    if lw_ and gp_:
-        lw_mm = float(np.percentile(lw_, 50)) / sc
-        gp_mm = float(np.percentile(gp_, 50)) / sc
-        rec("织纹线宽/间隙", "%.3f / %.3f mm" % (lw_mm, gp_mm),
-            lw_mm >= 0.100 and gp_mm >= 0.100,
-            "下限都是 0.100（1 oz）；样板 0.115 / 0.105。太密会糊成一块铜")
+    # **必须走矢量**：0.1 mm 级的细条在 100 px/mm 光栅上会被边缘糊掉 ±0.003，
+    # 而这 0.003 正好决定做不做得出（0.092 与 0.100 之差就是"没有织纹"与"有织纹"）。
+    try:
+        _regs = _gpoly.regions(LAYERS["GBL" if _side == "背面" else "GTL"])
+    except Exception:
+        _regs = []
+    _w, _p = [], []
+    for _q in _regs:
+        _xs = [q[0] for q in _q]; _ys = [q[1] for q in _q]
+        _bx0, _bx1, _by0, _by1 = min(_xs), max(_xs), min(_ys), max(_ys)
+        _cx, _cy = (_bx0 + _bx1) / 2.0, (_by0 + _by1) / 2.0
+        if not (wx <= _cx <= wx + ww and wy - wh <= _cy <= wy):
+            continue
+        _bw, _bh = _bx1 - _bx0, _by1 - _by0
+        if _bh < 0.30 and _bw > 0.8:
+            _w.append(_bh); _p.append(_by0)
+        elif _bw < 0.30 and _bh > 0.8:
+            _w.append(_bw); _p.append(_bx0)
+    if len(_w) >= 10:
+        _ths = float(np.median(_w))
+        _ps = np.array(sorted(set(round(v, 6) for v in _p)))
+        _dd = np.diff(_ps); _dd = _dd[(_dd > 0.15) & (_dd < 0.30)]
+        _pit = float(np.median(_dd)) if len(_dd) else 0.0
+        _gap = _pit - _ths
+        rec("织纹线宽/间隙", "%.4f / %.4f mm（矢量，周期 %.4f）" % (_ths, _gap, _pit),
+            _ths >= 0.100 and _gap >= 0.100,
+            "下限都是 0.100；官方样板 0.1121 / 0.1103（周期 0.2223）")
 
 # ---------- 钻孔 ----------
 if DRL:

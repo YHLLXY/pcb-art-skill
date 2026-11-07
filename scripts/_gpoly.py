@@ -60,3 +60,36 @@ def area_mm2(pts):
         x2, y2 = pts[(i + 1) % len(pts)]
         s += x1 * y2 - x2 * y1
     return abs(s) / 2.0
+
+def regions(path):
+    """Gerber 里的 G36/G37 区域 -> [[(x, y), ...], ...]（mm）。
+
+    编织纹是几千条 0.1 mm 级的细条，光栅量出来的宽度会被边缘糊掉 ±0.003，
+    而正好是这 0.003 决定"做不做得出"。所以量线宽/间隙必须走矢量。
+    """
+    txt = open(path, encoding="utf-8", errors="ignore").read()
+    out = []
+    pts = []
+    reg = False
+    X = Y = 0.0
+    for ln in txt.splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        if ln.startswith("G36"):
+            reg, pts = True, []
+            continue
+        if ln.startswith("G37"):
+            if len(pts) >= 3:
+                out.append(pts[:])
+            reg, pts = False, []
+            continue
+        m = re.match(r"^(?:G0?[123])?(?:X(-?\d+))?(?:Y(-?\d+))?D0?([123])\*$", ln)
+        if not m:
+            continue
+        nx = int(m.group(1)) / 100000.0 if m.group(1) else X
+        ny = int(m.group(2)) / 100000.0 if m.group(2) else Y
+        if reg and (not pts or pts[-1] != (nx, ny)):
+            pts.append((nx, ny))
+        X, Y = nx, ny
+    return out

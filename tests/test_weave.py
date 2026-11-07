@@ -42,14 +42,14 @@ def test_default_clip():
     # 间隙只有 0.090，制程做不出来 → 李欣雨那块板的织纹没印出来）。条数 5416 -> 4888。
     rs = wv.weave_rects()
     assert len(rs) == 4888
-    assert abs(sum(w * h for _, _, w, h in rs) - 2102) < 5
+    assert abs(sum(w * h for _, _, w, h in rs) - 2049) < 5
 
 
 def test_example_clip():
     # 2026-11-07 间距改大：5749/2239 -> 5160/2244（面积几乎不变：线宽也一起加粗了）
     rs = wv.weave_rects(42.55, 25.55, 2.9)
     assert len(rs) == 5160
-    assert abs(sum(w * h for _, _, w, h in rs) - 2244.0) < 6
+    assert abs(sum(w * h for _, _, w, h in rs) - 2188.0) < 6
 
 
 def test_orientation_matches_pattern():

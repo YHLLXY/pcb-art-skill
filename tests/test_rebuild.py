@@ -70,8 +70,8 @@ def test_stdout_stats(built):
     stdout, _ = built
     m = re.search(r"weave\s+(\d+) rects\s+([\d.]+) mm2", stdout)
     assert m, stdout
-    assert int(m.group(1)) == 5160     # 5749 -> 5160（间距 0.195->0.2225）
-    assert abs(float(m.group(2)) - 2244.0) < 5.0
+    assert int(m.group(1)) == 5160     # 5749 -> 5160（间距 0.195->0.2223）
+    assert abs(float(m.group(2)) - 2188.0) < 5.0
     m = re.search(r"badge\s+(\d+) rects\s+([\d.]+) mm2", stdout)
     assert m, stdout
     assert abs(float(m.group(2)) - 465.3) < 2.5
