@@ -45,6 +45,7 @@ description: Use when 要做一块只有美术、没有电路的 PCB（生日卡
 | **不知道版式怎么排** | `templates/layouts/`（三个模板 + 24 px/mm 示意） |
 | **想先看一眼 spec 长什么样（不开 EDA）** | `scripts/20-preview_spec.py` |
 | **手绘涂鸦 / 签名整张上板** | `references/03`「十一」（spec 的 `arts` / `dots` / `board`） |
+| **把金换成丝印（降沉金）** | `09` 第 5 节：优先级 金带 > 装饰件 > 次要文字 > 主图（主图别动） |
 | **要做菱形吊牌 / 任意角度板** | `references/03`「十二」（`board.rot`，绕参考角转的坑见 `04` 126） |
 | **异形板的配比数字不对** | 板面积必须按轮廓算（`scripts/_gpoly.py`），见 `02`「第三版口径」 |
 | **要一张 ≥60 px/mm 的局部图** | `scripts/20-preview_spec.py --sc 60 --crop x0,y0,x1,y1` |
@@ -55,7 +56,9 @@ description: Use when 要做一块只有美术、没有电路的 PCB（生日卡
 | **不想一条条注图元（直接写 .epcb2）** | `references/03-EDA落地.md` 第八节 |
 | **徽记是实心色块 + 挖空白字（圆盘型）** | `references/02-制造性与矢量.md`「徽记有两种原型」 |
 | **出 3D 预览给用户验收** | `scripts/14-render3d.py` |
-| 任何一步"看起来很怪"，先翻历史坑 | `references/04-踩坑清单.md`（150 条，A–V 节） |
+| **"沉金面积超了" / 这块板要花多少沉金钱** | `references/09-面积与收费.md` + `scripts/22-area_budget.py`（四个面积 / 30% 收费线 / 金预算表） |
+| **用户报的面积和你量的差 2 倍** | 先查分母（轮廓 / 外框 / 两面），再查单位（% / cm²）——`09` 第 3 节 |
+| 任何一步"看起来很怪"，先翻历史坑 | `references/04-踩坑清单.md`（155 条，A–W 节） |
 | **打包下单，确认手里这份是不是验收那份** | `scripts/19-pack_order.py`（MANIFEST + `--verify`） |
 | **改脚本之后先确认没把板子改坏** | `python -m pytest tests -q`（金板复现 / 织纹 / 自检本身） |
 | **想换字体 / 换机器跑不起来** | `references/02-制造性与矢量.md`「字体」 |
