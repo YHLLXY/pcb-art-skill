@@ -26,10 +26,11 @@ def test_known_numbers(checked):
     #   22.46%  原始：04-gerber_raster 的弧线折点没补圆，圆角金带的缺口被当成"没有铜"
     #   22.50%  修了光栅化器之后
     #   22.68%  分母从"外接框"改成"轮廓面积"（菱形/异形板必须这样，见 04 第 127 条）
+    #   22.48%  织纹按官方样板改准（0.2225/0.115）后示例板重新导出，板框量到 4661 mm²
     out = checked.stdout
-    assert "22.68%" in out          # 沉金（正金∪背金 ÷ 轮廓面积）
-    assert "1052.15" in out         # 面积
-    assert "4633" in out            # 板面积按轮廓算（86.25x54.25 的外接框是 4679 mm²）
+    assert "22.48%" in out          # 沉金（正金∪背金 ÷ 轮廓面积）
+    assert "1051.04" in out         # 金面积
+    assert "4661" in out            # 板面积按轮廓算
     assert "100.0%" in out          # 织纹吻合度
     assert "0.120" in out           # 最小铜宽 p5
     assert "全绿" in out

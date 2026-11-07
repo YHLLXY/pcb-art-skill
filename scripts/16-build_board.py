@@ -259,6 +259,12 @@ def main(spec_path, tpl_dir, out_pcb):
     rstep = float(spec.get("step", 0.06))
     if spec.get("arts") or spec.get("dots"):
         bw, bh = float(spec["board"]["w"]), float(spec["board"]["h"])
+        # 转了角度的板，实际占的外接框是 w·cos+b·sin 见方；网格按 w×h 建会把四角切掉
+        # （菱形吊牌第一次就是：x>±48 的雪花被裁成碎片，还以为是素材的问题）
+        _th = math.radians(float(spec["board"].get("rot", 0) or 0))
+        gw = bw*abs(math.cos(_th)) + bh*abs(math.sin(_th))
+        gh = bw*abs(math.sin(_th)) + bh*abs(math.cos(_th))
+        bw, bh = gw, gh
         Wb, Hb = int(round(bw/rstep)), int(round(bh/rstep))
         ink_all = np.zeros((Hb, Wb), bool)
         for a in spec.get("arts", []):

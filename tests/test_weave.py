@@ -17,7 +17,7 @@ CELL = wv.CELL
 def cell_votes(rects, cell, i0, j0, ni, nj):
     """把每条矩形和单元的交集面积记到 H / V 账上。
 
-    不能靠"采样点命中"判朝向：条纹间距 0.195、线宽 0.103，随便取的点大半落在缝里，
+    不能靠"采样点命中"判朝向：条纹间距 0.2225、线宽 0.115，随便取的点大半落在缝里，
     会得到"没覆盖 = 默认 H"这种假结论（第一版就这么误判了一整行）。
     """
     import numpy as np
@@ -38,15 +38,18 @@ def cell_votes(rects, cell, i0, j0, ni, nj):
 
 
 def test_default_clip():
+    # 2026-11-07：间距/线宽按官方样板重测改成 0.2225/0.115（原来 0.195/0.103 偏细 13%，
+    # 间隙只有 0.090，制程做不出来 → 李欣雨那块板的织纹没印出来）。条数 5416 -> 4888。
     rs = wv.weave_rects()
-    assert len(rs) == 5416
-    assert abs(sum(w * h for _, _, w, h in rs) - 2086) < 5
+    assert len(rs) == 4888
+    assert abs(sum(w * h for _, _, w, h in rs) - 2102) < 5
 
 
 def test_example_clip():
+    # 2026-11-07 间距改大：5749/2239 -> 5160/2244（面积几乎不变：线宽也一起加粗了）
     rs = wv.weave_rects(42.55, 25.55, 2.9)
-    assert len(rs) == 5749
-    assert abs(sum(w * h for _, _, w, h in rs) - 2239.0) < 5
+    assert len(rs) == 5160
+    assert abs(sum(w * h for _, _, w, h in rs) - 2244.0) < 6
 
 
 def test_orientation_matches_pattern():
@@ -72,7 +75,7 @@ def test_orientation_matches_pattern():
 
 
 def test_pitch_and_width():
-    """条数对不代表间距对：0.195 和 0.200 的条数一样（每 2 mm 都 10 条），只有间距能分开。"""
+    """条数对不代表间距对：0.2225 和 0.200 的条数一样（每 2 mm 都 9 条），只有间距能分开。"""
     rs = wv.weave_rects(42.55, 25.55, 2.9)
     # 取第 0 行（y 0..2）里所有横条，量它们的 y 间距
     hs = sorted({round(yc, 6) for (l, yc, w, h) in rs if w > h and 0 < yc < 2})

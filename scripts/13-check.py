@@ -203,6 +203,11 @@ WEAVE_REF = ["VHHV", "HHVV", "HVVH", "VVHH"]
 if WEAVE:
     sc, (wx, wy, ww, wh) = 100.0, WV_WIN
     cu = Lwin("GTL", sc, wx, wy, ww, wh)
+    _side = "正面"
+    if cu is not None and cu.mean() < 0.10:      # 织纹可能只做了背面
+        _b = Lwin("GBL", sc, wx, wy, ww, wh)
+        if _b is not None and _b.mean() > cu.mean():
+            cu, _side = _b, "背面"
     T = int(WV_CELL*sc)
     njy, nxi = cu.shape[0]//T, cu.shape[1]//T
     got = []
@@ -217,11 +222,13 @@ if WEAVE:
             vx = np.abs(np.diff(t, axis=1)).mean(); vy = np.abs(np.diff(t, axis=0)).mean()
             row += "H" if vy > vx else "V"
         got.append(row)
+    # 量的是背面时，表要左右翻：layer 2 的几何是镜像的，直接比会只有 50%
+    REF = [r[::-1] for r in WEAVE_REF] if _side == "背面" else WEAVE_REF
     best, bestd = -1, None
     for dj in range(4):
         for di in range(4):
             ok = sum(1 for j in range(njy) for i in range(nxi)
-                     if got[j][i] == WEAVE_REF[(j+dj) % 4][(i+di) % 4])
+                     if got[j][i] == REF[(j+dj) % 4][(i+di) % 4])
             if ok > best: best, bestd = ok, (di, dj)
     tot = njy*nxi
     pct = 100.0*best/tot
@@ -232,9 +239,36 @@ if WEAVE:
         rec("织纹吻合度", "窗口里只有 %.1f%% 铜，无法判" % cov, True,
             "用 --weave-win x0,y0,w,h 指到有织纹的地方（默认 %s）" % ",".join("%g" % v for v in WV_WIN), warn=True)
     else:
-        rec("织纹吻合度", "%.1f%%（相位 %s，%dx%d 单元）" % (pct, bestd, nxi, njy),
-            pct >= WV_MIN, "参考板纹路表 %s；下限 %.0f%%" % ("/".join(WEAVE_REF), WV_MIN))
+        rec("织纹吻合度", "%.1f%%（%s，相位 %s，%dx%d 单元）" % (pct, _side, bestd, nxi, njy),
+            pct >= WV_MIN, "参考板纹路表 %s%s；下限 %.0f%%" % (
+                "/".join(REF), "（背面已左右翻）" if _side == "背面" else "", WV_MIN))
     rows.append(("织纹覆盖率", "%.1f%%" % cov, "INFO", "参考板 56%，只作参考不判定"))
+    # 工艺下限：线宽和间隙都必须 >= 0.10 mm。
+    # 李欣雨那块板写的是 0.103/0.195（间隙 0.092），比样板细 13%，蚀刻直接吃掉 → 织纹没印出来。
+    # 光栅上量一次就能抓住，所以这条必须有牙。
+    def _runs(v):
+        idx = np.nonzero(v)[0]
+        if not len(idx):
+            return [], []
+        ln, gp, st, pv = [], [], idx[0], idx[0]
+        for x in idx[1:]:
+            if x == pv + 1:
+                pv = x
+            else:
+                ln.append(pv - st + 1); gp.append(x - pv - 1); st = pv = x
+        ln.append(pv - st + 1)
+        return ln, gp
+    lw_, gp_ = [], []
+    for r in range(0, cu.shape[0], 5):
+        x, y = _runs(cu[r]); lw_ += x; gp_ += y
+    for c in range(0, cu.shape[1], 5):
+        x, y = _runs(cu[:, c]); lw_ += x; gp_ += y
+    if lw_ and gp_:
+        lw_mm = float(np.percentile(lw_, 50)) / sc
+        gp_mm = float(np.percentile(gp_, 50)) / sc
+        rec("织纹线宽/间隙", "%.3f / %.3f mm" % (lw_mm, gp_mm),
+            lw_mm >= 0.100 and gp_mm >= 0.100,
+            "下限都是 0.100（1 oz）；样板 0.115 / 0.105。太密会糊成一块铜")
 
 # ---------- 钻孔 ----------
 if DRL:

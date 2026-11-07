@@ -21,10 +21,15 @@ try:                                    # Windows 控制台默认 GBK，中文�
 except Exception:
     pass
 
-# ---- 参考板实测（不主张改） ----
-CELL   = 2.0        # 单元 2 mm
-PITCH  = 0.195      # 条纹间距
-LINE_W = 0.103      # 条纹线宽（4 mil 级；参考板同款）
+# ---- 参考板实测（2026-11-07 晚上用官方样板重测，400 px/mm）----
+# 之前写 PITCH=0.195 / LINE_W=0.103，是早期 100 px/mm 光栅上读出来的，**偏细 13%**：
+#   线宽 0.103 → 间隙 0.090 mm，低于嘉立创 1 oz 的 0.10 下限，铜被蚀刻吃掉，
+#   整片织纹糊成一块实心铜 —— 李欣雨那块板（LiXinYu SAU）就是这么没印出来的。
+# 官方样板逐块量：线宽 0.115（p25=p50，p75 0.117）、间隙 0.105、周期 0.2225（±0.0005）。
+CELL   = 2.0        # 单元 2 mm（朝向每 2 mm 换一次，和样板一致）
+PITCH  = 0.2225     # 条纹周期（= 线宽 0.115 + 间隙 0.1075）
+LINE_W = 0.115      # 条纹线宽
+GAP_MIN = 0.10      # 嘉立创 1 oz 最小间距；PITCH-LINE_W 必须 >= 这个数
 RAD    = 2.2        # 板框圆角
 CLIPX, CLIPY = 40.85, 24.85
 
@@ -157,7 +162,11 @@ if __name__ == "__main__":
     rs = weave_rects(a.clip[0], a.clip[1], a.r, a.cell, a.pitch, a.width)
     area = sum(w*h for (_, _, w, h) in rs)
     print("rects %d  copper %.0f mm2  (%.1f%% of 86.2x54.2)" % (len(rs), area, 100*area/(86.2*54.2)))
-    print("pattern 'VHHV/HHVV/HVVH/VVHH'  cell %.1f  pitch %.3f  width %.3f" % (a.cell, a.pitch, a.width))
+    print("pattern 'VHHV/HHVV/HVVH/VVHH'  cell %.1f  pitch %.3f  width %.3f  间隙 %.4f" % (
+        a.cell, a.pitch, a.width, a.pitch - a.width))
+    if a.pitch - a.width < GAP_MIN - 1e-9 or a.width < GAP_MIN - 1e-9:
+        print("WARN 织纹过密：线宽 %.3f / 间隙 %.4f 低于 %.2f，制程做不出来（会糊成一块铜）" % (
+            a.width, a.pitch - a.width, GAP_MIN))
     if a.out:
         json.dump(rs, open(a.out, "w")); print("wrote", a.out)
     if a.preview:

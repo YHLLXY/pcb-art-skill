@@ -37,14 +37,16 @@ def built(tmp_path_factory):
 
 
 def test_record_count(built):
+    # 2026-11-07：织纹间距/线宽按官方样板重测改大（0.195/0.103 -> 0.2225/0.115），
+    # 织纹条数 5749 -> 5160，总条数 37571 -> 36393。板的几何没变，变的是"抄对没有"。
     _, lines = built
-    assert len(lines) == 37571
+    assert len(lines) == 36393
 
 
 def test_type_counts(built):
     _, lines = built
     c = Counter(re.search(r'"type":"([^"]+)"', l).group(1) for l in lines)
-    assert c["FILL"] == 37408
+    assert c["FILL"] == 36230
     assert c["PAD"] == 9        # 主孔 φ3.0 + 参考板那圈 8×φ0.305
     assert c["STRING"] == 3     # 正/背 1956—2026 + 底部英文
     assert c["POLY"] == 5       # 板框 + 四圈金带（正铜/正窗/背铜/背窗）
@@ -56,8 +58,8 @@ def test_fill_per_layer(built):
     for l in lines:
         if '"type":"FILL"' in l:
             c[int(re.search(r'"layerId":(\d+)', l).group(1))] += 1
-    assert c[1] == 16211   # 正面铜：织纹 + 徽记 + 校名
-    assert c[2] == 8111    # 背面铜：织纹 + 校训
+    assert c[1] == 15622   # 正面铜：织纹 + 徽记 + 校名
+    assert c[2] == 7522    # 背面铜：织纹 + 校训
     assert c[4] == 262     # 底层丝印：底部英文
     assert c[5] == 10462   # 正面开窗：徽记 + 校名
     assert c[6] == 2362    # 背面开窗：校训
@@ -68,8 +70,8 @@ def test_stdout_stats(built):
     stdout, _ = built
     m = re.search(r"weave\s+(\d+) rects\s+([\d.]+) mm2", stdout)
     assert m, stdout
-    assert int(m.group(1)) == 5749
-    assert abs(float(m.group(2)) - 2239.0) < 5.0
+    assert int(m.group(1)) == 5160     # 5749 -> 5160（间距 0.195->0.2225）
+    assert abs(float(m.group(2)) - 2244.0) < 5.0
     m = re.search(r"badge\s+(\d+) rects\s+([\d.]+) mm2", stdout)
     assert m, stdout
     assert abs(float(m.group(2)) - 465.3) < 2.5

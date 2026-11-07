@@ -1,7 +1,7 @@
 [![tests](https://github.com/YHLLXY/pcb-art-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/YHLLXY/pcb-art-skill/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
-[![tests](https://img.shields.io/badge/tests-25-brightgreen.svg)](tests)
+[![tests](https://img.shields.io/badge/tests-17-brightgreen.svg)](tests)
 
 # gift-pcb
 
@@ -83,27 +83,8 @@ examples/uestc70/     一块完整样例：spec + 徽记图 + gerber.zip + 验�
 templates/blank/      最小模板工程（147 条：层定义/规则/板框，没有图形）
 templates/问卷.md     P0.5 八问 + 元素清单，未确认项不许进 P2
 templates/layouts/    三个版式（徽记居中 / 左图右字 / 满幅出血）+ 24 px/mm 示意
-tests/                25 条测试：金板复现 / 织纹 / 自检 / 徽记解码 / 素材链路 / 下单包
-AGENTS.md             agent 进仓库先读这个（改脚本的规矩）
-CONTRIBUTING.md       报问题、加样例、不许提交的东西
+tests/                金板复现 / 织纹 / 自检脚本本身的测试
 ```
-
-## 安装（当成 agent skill 用）
-
-skill 靠**目录名**识别：目录必须叫 `gift-pcb`（= `SKILL.md` 里的 `name`），仓库名可以叫别的。
-
-```bash
-# DSH
-git clone git@github.com:YHLLXY/pcb-art-skill.git ~/.dsh/skills/gift-pcb
-# Claude Code
-git clone git@github.com:YHLLXY/pcb-art-skill.git ~/.claude/skills/gift-pcb
-```
-
-克隆下来的目录带 `.git`，以后 `git pull` 就能升级；不想留仓库就把 `.git` 删掉。
-
-依赖只有两个：`python -m pip install -r requirements.txt`（numpy + pillow）。跑测试再加 `-r requirements-dev.txt`。
-
-**只想跑脚本、不当 skill 用**：随便 clone 到哪都行，直接 `python scripts/13-check.py ...`。
 
 ## 快速开始
 
@@ -122,37 +103,19 @@ python scripts/13-check.py out_gerber.zip --weave     # 交付前自检，全绿
 `spec.json` 的 `fonts` / 环境变量 `GIFT_PCB_FONT_XINGKAI` / 直接改脚本里的默认表。
 换完字宽会变，金板数字要重新量——步骤见 `references/02`「字体可以换」。
 
-## Quick start (EN)
-
-```bash
-git clone https://github.com/YHLLXY/pcb-art-skill.git
-cd pcb-art-skill && python -m pip install -r requirements-dev.txt
-python -m pytest tests -q                        # 17 offline tests
-python scripts/16-build_board.py examples/uestc70/spec.json templates/blank out/PCB1.epcb2
-python scripts/20-preview_spec.py examples/uestc70/spec.json templates/blank out/mock.png --sc 24
-python scripts/13-check.py examples/uestc70/gerber.zip --weave --md out/report.md
-```
-
-What it is: a workflow (not a Gerber library) for artwork-only PCBs — decode a reference board layer by layer,
-measure its gold coverage / line widths / weave table, replay those numbers, then check the exported Gerbers
-offline (`13-check`) before ordering. The only manual step is clicking *export* in EasyEDA Pro.
-Numbers in the docs are measured, not estimated; `references/04` is a 118-entry pitfall log from four real boards.
-
 ## 测试
 
 ```bash
-python -m pytest tests -q          # 25 条，全部跑完约 13 s
+python -m pytest tests -q          # 17 条，全部跑完约 9 s
 ```
 
 | 测试 | 锁的是什么 |
 |---|---|
 | `test_rebuild` | `examples/uestc70/spec.json` → `.epcb2`：**37571 条 / FILL 37408 / PAD 9**、逐层条数（1:16211 2:8111 4:262 5:10462 6:2362）、织纹 5749 条 2239 mm²、徽记 465.3 mm² |
-| `test_weave` | 织纹条数、铜面积、**纹距 0.195 / 线宽 0.103**、以及**逐单元朝向 100% 等于参考板表**（行序翻错会红，04 第 110 条） |
+| `test_weave` | 织纹条数、铜面积、**纹距 0.2225 / 线宽 0.115**（官方样板 400 px/mm 实测值）、以及**逐单元朝向 100% 等于参考板表**（行序翻错会红，04 第 110 条） |
 | `test_check` | 拿金板跑 `13-check`：必须全绿；再拿只有板框的空板跑，必须报 FAIL 且退出码 1 |
 | `test_decode` | 徽记解码：蓝/橙的 UESTC 徽记与「红盘+金内圆」的合成图都必须判成圆盘型（不靠写死色值） |
 | `test_assets` | 素材链路：本地目录 → 图墙；300 px 暗底图必须被剔，且理由要写出来 |
-| `test_preview` | spec 预览：尺寸、徽记盘心是金的、盘的外接框 φ30 且居中（坐标约定写错就红）、空白处是暗的 |
-| `test_pack_order` | 下单包 MANIFEST：生成 / 回验 / 改一个字节必须红 / 多一个文件必须红 / 缺必需文件必须红 |
 
 **测试只覆盖离线段。** EDA 里那一段（写 `.epcb2` → 导出 Gerber）没法自动化：
 需要装 EDA 专业版、开工程、点导出。所以流程是「离线测试全绿 → 人工导出 → `13-check` 复核」。
