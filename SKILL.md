@@ -48,12 +48,14 @@ description: Use when 要做一块只有美术、没有电路的 PCB（生日卡
 | **要做菱形吊牌 / 任意角度板** | `references/03`「十二」（`board.rot`，绕参考角转的坑见 `04` 126） |
 | **异形板的配比数字不对** | 板面积必须按轮廓算（`scripts/_gpoly.py`），见 `02`「第三版口径」 |
 | **要一张 ≥60 px/mm 的局部图** | `scripts/20-preview_spec.py --sc 60 --crop x0,y0,x1,y1` |
+| **"这板子到底多大？"（尺寸拿不准）** | `scripts/21-one_to_one.py`：A4 双面 1:1 实尺页（600 dpi + 100 mm 标尺 + 1:1 硬币/银行卡），打印选"实际大小" |
+| **改板子尺寸（放大/缩小）** | `04` 第 149 条：图形跟着缩，**织纹/孔径/板厚/金带宽不缩**，`minw` 重新按工艺地板定 |
 | **背面 3D 图的字是反的** | `scripts/14-render3d.py --flip-back`（不翻 = 从正面透过板子看） |
 | 写 EasyEDA 专业版的 CLI/JS 调用 | `references/03-EDA落地.md` |
 | **不想一条条注图元（直接写 .epcb2）** | `references/03-EDA落地.md` 第八节 |
 | **徽记是实心色块 + 挖空白字（圆盘型）** | `references/02-制造性与矢量.md`「徽记有两种原型」 |
 | **出 3D 预览给用户验收** | `scripts/14-render3d.py` |
-| 任何一步"看起来很怪"，先翻历史坑 | `references/04-踩坑清单.md`（118 条，A–R 节） |
+| 任何一步"看起来很怪"，先翻历史坑 | `references/04-踩坑清单.md`（150 条，A–V 节） |
 | **打包下单，确认手里这份是不是验收那份** | `scripts/19-pack_order.py`（MANIFEST + `--verify`） |
 | **改脚本之后先确认没把板子改坏** | `python -m pytest tests -q`（金板复现 / 织纹 / 自检本身） |
 | **想换字体 / 换机器跑不起来** | `references/02-制造性与矢量.md`「字体」 |
@@ -87,6 +89,7 @@ description: Use when 要做一块只有美术、没有电路的 PCB（生日卡
 - `preview/v<n>_front3d.png` / `v<n>_back3d.png`：`14-render3d.py` 出的伪 3D（哑黑浮雕 + 金反光），给用户做 P4.5 验收
 - `docs/03-当前状态.md`：层统计、几何参数、已定不动项、待定项
 - `docs/验收单.md`：`13-check.py --md` 生成的实测表 + P4.5 十四项勾选（**每块板一份，别口头问**）
+- `preview/1比1_<tag>_实尺打印.pdf`：`21-one_to_one.py` 出的 1:1 实尺页，**定尺寸前必须打一张**
 - **下单包**：Gerber + 预览图 + **完整工程目录**的压缩包（`.eprj3` + `pcb/` + `sch/` + `panel/`，
   只给 `pcb/*.epcb2` 打不开；EDA 专用券也要求工程文件，见 `04` 第 144 条）+ `下单说明.txt` + `MANIFEST.txt`
   （`scripts/19-pack_order.py` 出 sha256，解压后 `--verify` 回验一致才下单）
