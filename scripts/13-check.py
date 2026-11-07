@@ -27,9 +27,9 @@ def opt(name, default=None):
 SRC       = ARGV[0] if ARGV else None
 BOARD     = opt("--board", None)      # 不给就按量到的板框为准（换尺寸不用改命令）
 GOLD_MAX  = float(opt("--gold-max", "24"))
-GOLD_MIN  = float(opt("--gold-min", "8"))     # 低于此值"太黑显空"（参考板 19.8%）
-SILK_MINP = float(opt("--silk-pct-min", "0.3"))  # 白丝印占比下限（参考板正面 1.48%）
-BLACK_MIN = float(opt("--black-min", "70"))   # 哑黑占比下限（参考板 60.4%）
+GOLD_MIN  = float(opt("--gold-min", "8"))     # 低于此值"太黑显空"（参考板 22.2%）
+SILK_MINP = float(opt("--silk-pct-min", "0.3"))  # 白丝印占比下限（参考板正面 1.49%）
+BLACK_MIN = float(opt("--black-min", "55"))   # 哑黑占比下限（参考板实测 60.7%，原写 70 连参考板自己都不合格）
 WEAVE     = "--weave" in ARGV                 # 织纹结构校验（默认关，装饰板开）
 if WEAVE: ARGV.remove("--weave")
 WV_MIN    = float(opt("--weave-min", "90"))   # 与参考板纹路表的吻合度下限（%）
@@ -112,15 +112,30 @@ gko = L("GKO")
 ys, xs = np.nonzero(gko)
 SC = 20.0; X0, Y0 = WIN[0], WIN[1]
 w_mm = (xs.max() - xs.min()) / SC; h_mm = (ys.max() - ys.min()) / SC
+sys.path.insert(0, HERE)
+import _gpoly
+_poly = _gpoly.polygon(LAYERS["GKO"])
+_sx = 0.0
+for i in range(len(_poly)):
+    x1, y1 = _poly[i]; x2, y2 = _poly[(i+1) % len(_poly)]
+    _sx += x1*y2 - x2*y1
+AREA_MM2 = abs(_sx)/2.0
+_box = Image.new("L", (gko.shape[1], gko.shape[0]), 0)
+if len(_poly) >= 3:
+    ImageDraw.Draw(_box).polygon([((x-WIN[0])*SC, (WIN[1]-y)*SC) for (x, y) in _poly], fill=255)
+area = np.asarray(_box) > 0
+_a2 = area.sum()/SC/SC
+if AREA_MM2 > 0 and abs(_a2 - AREA_MM2) > 0.05*AREA_MM2:
+    print("WARN 轮廓面积两种算法不一致：shoelace %.1f / 光栅 %.1f mm2" % (AREA_MM2, _a2))
+
 if BOARD:
     want_w, want_h = [float(v) for v in BOARD.lower().split("x")]
-    rec("板尺寸 mm", "%.2f x %.2f" % (w_mm, h_mm),
-        abs(w_mm - want_w) <= 0.35 and abs(h_mm - want_h) <= 0.35, "期望 %.1f x %.1f" % (want_w, want_h))
+    rec("板尺寸 mm", "%.2f x %.2f  %.0f mm2" % (w_mm, h_mm, AREA_MM2),
+        abs(w_mm - want_w) <= 0.35 and abs(h_mm - want_h) <= 0.35,
+        "期望 %.1f x %.1f（面积按轮廓算，不是外接框）" % (want_w, want_h))
 else:
-    rec("板尺寸 mm", "%.2f x %.2f" % (w_mm, h_mm), True, "没给 --board，以量到的板框为准（板框线宽会让它比名义尺寸大 0.2–0.3）")
-box = Image.new("L", (gko.shape[1], gko.shape[0]), 0)
-ImageDraw.Draw(box).rounded_rectangle((xs.min(), ys.min(), xs.max(), ys.max()), radius=int(3.5*SC), fill=255)
-area = np.asarray(box) > 0
+    rec("板尺寸 mm", "%.2f x %.2f  %.0f mm2" % (w_mm, h_mm, AREA_MM2), True,
+        "没给 --board，以量到的板框为准（板框线宽会让它比名义尺寸大 0.2–0.3）；面积按轮廓算，不是外接框")
 
 # ---------- 金面积 ----------
 gtl, gbl = L("GTL"), L("GBL")
@@ -138,7 +153,7 @@ if _missing:
 ratio = 100.0 * gold.sum() / area.sum()
 rec("沉金面积", "%.2f mm2 = %.2f%%" % (gold.sum()/SC/SC, ratio),
     GOLD_MIN <= ratio <= GOLD_MAX,
-    "参考板 22.0%%（本脚本口径）；区间 %.0f–%.0f%%；正 %.2f%% / 背 %.2f%%" % (
+    "参考板 22.2%%（本脚本口径：轮廓面积）；区间 %.0f–%.0f%%；正 %.2f%% / 背 %.2f%%" % (
         GOLD_MIN, GOLD_MAX, 100.0*gold_t.sum()/area.sum(), 100.0*gold_b.sum()/area.sum()),
     warn=(ratio < GOLD_MIN))
 
@@ -178,9 +193,9 @@ silk_b = (gbo2 & area) if gbo2 is not None else np.zeros_like(area)
 silk_all = silk_t | silk_b
 sp = 100.0*silk_all.sum()/area.sum()
 rec("白丝印面积", "%.2f%%（正 %.2f / 背 %.2f）" % (sp, 100.0*silk_t.sum()/area.sum(), 100.0*silk_b.sum()/area.sum()),
-    sp >= SILK_MINP, "参考板正 1.48%% / 背 23.09%%；下限 %.1f%%" % SILK_MINP, warn=True)
+    sp >= SILK_MINP, "参考板正 1.49%% / 背 23.27%%；下限 %.1f%%" % SILK_MINP, warn=True)
 bp = 100.0*(area & ~gold & ~silk_all).sum()/area.sum()
-rec("哑黑占比", "%.2f%%" % bp, bp >= BLACK_MIN, "参考板 60.4%%；下限 %.0f%%" % BLACK_MIN, warn=True)
+rec("哑黑占比", "%.2f%%" % bp, bp >= BLACK_MIN, "参考板 60.70%%；下限 %.0f%%（整板铺金才会破这个数）" % BLACK_MIN, warn=True)
 
 # ---------- 织纹结构（和参考板纹路表逐单元比对） ----------
 # 参考板 86.2x54.2 哑黑+沉金 的 2 mm 单元朝向表（8x8 mm 一个周期）

@@ -93,6 +93,45 @@ def scan_rows(a, ppm, cx, cy, step, tol=0.008, minw=0.15):
     done.extend(open_.values())
     return [(l, yt-h/2.0+step/8, w, h) for (l, yt, w, n) in done for h in [n*step+step/8]]
 
+def rect_path(w, h, rot=0.0, r=0.0):
+    """R 路径 = [left, top, w, h, rot, cornerRadius]（mm）。
+
+    坑：EDA 的 rot 是**绕 (left, top) 这个参考角**转，不是绕矩形中心。
+    实测（2026-11-07，70x70 转 45°）：导出的 GKO 中心跑到 (14.5, 35.0)，
+    正好等于「绕左上角转」的结果。所以要让"转完之后矩形中心在原点"，
+    得把参考角放到 -R(rot)·(w/2, -h/2)：rot=0 时退化成 (-w/2, +h/2)，和原来一致。
+    """
+    th = math.radians(rot)
+    dx, dy = w/2.0, -h/2.0
+    ox = dx*math.cos(th) - dy*math.sin(th)
+    oy = dx*math.sin(th) + dy*math.cos(th)
+    return ["R", -ox, -oy, w, h, rot, r]          # 参考角 = 中心 - R(rot)·(w/2, -h/2)
+
+def rect_path_mil(w, h, rot=0.0, r=0.0):
+    """.epcb2 里长度是 mil、角度是度：只有 rot 不换算。"""
+    P = rect_path(w, h, rot, r)
+    return [P[0]] + [round(v/0.0254, 4) for v in P[1:5]] + [rot, round(P[6]/0.0254, 4)]
+
+def clip_hull(rs, a):
+    """把矩形条裁到菱形 |x|+|y| <= a 里（旋转 45° 的正方形）。
+
+    不精确求交：一条 0.1 mm 宽的条用两端较严的界，代价是边缘多切 0.1 mm，
+    换来的是"纹理不会跑到板外"和三十行以内的代码。
+    """
+    out = []
+    for (l, t, w, h) in rs:
+        if w >= h:                              # 横条：夹 x
+            allow = a - max(abs(t), abs(t-h))
+            if allow <= 1e-6: continue
+            l2, r2 = max(l, -allow), min(l+w, allow)
+            if r2 - l2 > 1e-6: out.append((l2, t, r2-l2, h))
+        else:                                   # 竖条：夹 y
+            allow = a - max(abs(l), abs(l+w))
+            if allow <= 1e-6: continue
+            t2, b2 = min(t, allow), max(t-h, -allow)
+            if t2 - b2 > 1e-6: out.append((l, t2, w, t2-b2))
+    return out
+
 def art_mask(a, Wb, Hb, step):
     """位图 -> 板网格布尔图（原点在板中心，左上角 y 最大）。
 
@@ -106,6 +145,15 @@ def art_mask(a, Wb, Hb, step):
     arr = np.asarray(im.resize((Wpx, Hpx), Image.LANCZOS)).astype(float)
     m = arr < float(a.get("thr", 150))
     if a.get("invert"): m = ~m
+    rot = float(a.get("rot", 0.0))
+    if rot:                      # 转完 expand 会把四角填黑，必须同时转一张"有效区"掩膜
+        mi = Image.fromarray((m*255).astype(np.uint8))
+        vi = Image.new("L", mi.size, 255)
+        mi = mi.rotate(rot, resample=Image.BICUBIC, expand=True)
+        vi = vi.rotate(rot, resample=Image.NEAREST, expand=True)
+        m = (np.asarray(mi) > 127) & (np.asarray(vi) > 127)
+        Wpx, Hpx = m.shape[1], m.shape[0]
+    
     full = np.zeros((Hb, Wb), bool)
     cx, cy = float(a.get("cx", 0.0)), float(a.get("cy", 0.0))
     j0 = int(round((cx - Wpx*step/2.0 + Wb*step/2.0)/step))
@@ -165,7 +213,12 @@ def main(spec_path, tpl_dir, out_pcb):
     if spec.get("weave"):
         c = spec["weave"]
         rs = wv.weave_rects(*c.get("clip", [40.85, 24.85]), c.get("r", 2.2))
-        groups += [(1, rs), (2, [( -(l+w), y, w, h) for (l, y, w, h) in rs])]
+        if c.get("hull"):                       # 菱形板：把纹理裁进 |x|+|y| <= a
+            a = float(spec["board"]["w"]) * math.sqrt(2) / 2.0 - float(c.get("inset", 0.9))
+            rs = clip_hull(rs, a)
+        for _ly in c.get("layers", [1, 2]):        # 只背面 = [2]；两面 = [1, 2]
+            groups.append((int(_ly), rs if int(_ly) == 1 else
+                           [( -(l+w), y, w, h) for (l, y, w, h) in rs]))
         stats["weave"] = (len(rs), sum(w*h for _, _, w, h in rs))
     if spec.get("badge"):
         rs, area = badge_rects(spec)
@@ -260,8 +313,8 @@ def main(spec_path, tpl_dir, out_pcb):
     if bd:                                   # 板框按 spec 重画（模板那块是 86x54）
         # 板框线宽 10 mil（=0.254 mm）。写成 10 会被当成 10 mm，把 GKO 的 bbox 撑大 10 mm，
         # 于是 13-check 的分母全错（84x90 就是这么来的）。
-        poly(11, ["R", q(-float(bd["w"])/2/K), q(float(bd["h"])/2/K), q(float(bd["w"])/K),
-                  q(float(bd["h"])/K), 0, q(float(bd.get("r", 3.5))/K)], 10*K)
+        poly(11, rect_path_mil(float(bd["w"]), float(bd["h"]), float(bd.get("rot", 0)),
+                                float(bd.get("r", 3.5))), 10*K)
 
     for layer, rs in groups:
         for (l, y, w, h) in rs:
@@ -274,10 +327,11 @@ def main(spec_path, tpl_dir, out_pcb):
 
     f = spec.get("frame")
     if f:
+        _frot = float(f.get("rot", spec.get("board", {}).get("rot", 0)))
+        _fp = rect_path_mil(float(f["w"]), float(f["h"]), _frot, float(f.get("r", 2.5)))
         for layer, wmm in ((1, f.get("cu", 0.40)), (5, f.get("mask", 0.50)),
                            (2, f.get("cu", 0.40)), (6, f.get("mask", 0.50))):
-            poly(layer, ["R", q(-f["w"]/2/K), q(f["h"]/2/K), q(f["w"]/K), q(f["h"]/K),
-                         0, q(f.get("r", 2.5)/K)], wmm)
+            poly(layer, _fp, wmm)
 
     for s in spec.get("strings", []):
         tk += 1

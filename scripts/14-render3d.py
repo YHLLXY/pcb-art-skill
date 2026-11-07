@@ -87,10 +87,19 @@ W, H = (bx1-bx0)+2*MARGIN, (by1-by0)+2*MARGIN
 m = {k: L(k, SC, X0, Y0, W, H) for k in SRC}
 h, w = m["GKO"].shape
 def px(x, y): return ((x-X0)*SC, (Y0-y)*SC)
-board = Image.new("L", (w, h), 0)
-a0 = px(bx0, by1); a1 = px(bx1, by0)
-ImageDraw.Draw(board).rounded_rectangle((a0[0], a0[1], a1[0], a1[1]), radius=int(3.5*SC), fill=255)
-board = np.asarray(board) > 0
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _gpoly
+_poly = _gpoly.polygon(SRC["GKO"]) if SRC.get("GKO") else []
+_bimg = Image.new("L", (w, h), 0)
+if len(_poly) >= 3:
+    # 板形按真实轮廓填：菱形/异形板不能拿外接框圆角矩形顶替，
+    # 否则 3D 图里会多出一块"方板"，菱形看着像贴在方片上。
+    ImageDraw.Draw(_bimg).polygon([px(x, y) for (x, y) in _poly], fill=255)
+else:
+    a0 = px(bx0, by1); a1 = px(bx1, by0)
+    ImageDraw.Draw(_bimg).rounded_rectangle((a0[0], a0[1], a1[0], a1[1]),
+                                            radius=int(3.5*SC), fill=255)
+board = np.asarray(_bimg) > 0
 
 hmask = Image.new("L", (w, h), 0)
 _hd = ImageDraw.Draw(hmask)
