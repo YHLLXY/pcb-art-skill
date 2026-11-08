@@ -153,7 +153,8 @@ if _missing:
 ratio = 100.0 * gold.sum() / area.sum()
 rec("沉金面积", "%.2f mm2 = %.2f%%" % (gold.sum()/SC/SC, ratio),
     GOLD_MIN <= ratio <= GOLD_MAX,
-    "参考板 22.2%%（本脚本口径：轮廓面积）；区间 %.0f–%.0f%%；正 %.2f%% / 背 %.2f%%" % (
+    "参考板 22.2%%；**口径=Gerber 全图 20 px/mm**（含压在板框外、会被铣掉的金带，约高 25%%）："
+    "要板上真值用 22-area_budget.py --sc 40。区间 %.0f–%.0f%%；正 %.2f%% / 背 %.2f%%" % (
         GOLD_MIN, GOLD_MAX, 100.0*gold_t.sum()/area.sum(), 100.0*gold_b.sum()/area.sum()),
     warn=(ratio < GOLD_MIN))
 

@@ -18,7 +18,7 @@
 """
 import sys, os, re, json, math, zipfile, tempfile, subprocess
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -73,7 +73,7 @@ def raster(path, sc, x0, y0, w, h):
                    env=env, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return np.array(Image.open(out).convert("L")) > 128
 
-def main(src, band=1.0, u="1U", as_json=False):
+def main(src, band=1.0, u="1U", as_json=False, sc=40.0):
     tmp = None
     if os.path.isfile(src) and src.lower().endswith(".zip"):
         tmp = tempfile.mkdtemp(prefix="ab"); zipfile.ZipFile(src).extractall(tmp); d = tmp
@@ -96,14 +96,22 @@ def main(src, band=1.0, u="1U", as_json=False):
     for i in range(len(poly)):
         x1, y1 = poly[i]; x2, y2 = poly[(i+1) % len(poly)]
         per += math.hypot(x2-x1, y2-y1)
-    sc = 20.0
     X0, Y0 = min(xs)-2, max(ys)+2
     W, H = (bw+4), (bh+4)
     def L(p): return raster(p, sc, X0, Y0, W, H) if p else None
     cu_t, cu_b, op_t, op_b = L(GTL), L(GBL), L(GTS), L(GBS)
     def AND(a, b): return (a & b) if (a is not None and b is not None) else np.zeros((1, 1), bool)
     gold = AND(cu_t, op_t) | AND(cu_b, op_b)
-    gold_mm2 = gold.sum()/sc/sc
+    # 板内掩膜：金带压在板框上，一半在板外、会被铣掉。不裁就把那半圈也算进"沉金面积"了
+    # （这块板：全图 7.1 cm²，板上只有 5.7 cm²，差 1.4 就是板外那半圈金带）
+    bim = Image.new("L", (int(W*sc), int(H*sc)), 0)
+    ImageDraw.Draw(bim).polygon([((x-X0)*sc, (Y0-y)*sc) for (x, y) in poly], fill=255)
+    inside = np.array(bim) > 0
+    if inside.shape != gold.shape:
+        b = np.zeros_like(gold); h_, w_ = min(inside.shape[0], gold.shape[0]), min(inside.shape[1], gold.shape[1])
+        b[:h_, :w_] = inside[:h_, :w_]; inside = b
+    gold_all = gold.sum()/sc/sc
+    gold_mm2 = (gold & inside).sum()/sc/sc
     open_px = (op_t.sum() if op_t is not None else 0) + (op_b.sum() if op_b is not None else 0)
     open_mm2 = float(open_px)/(sc*sc)          # 注意是 sc*sc；写成 sc/sc 会把 mm² 放大 400 倍
     pct = 100.0*gold_mm2/area
@@ -115,7 +123,7 @@ def main(src, band=1.0, u="1U", as_json=False):
         "order_bbox_mm": round(max(bw, bh) + 0.254, 3),
         "bbox_area_mm2": round((bw+0.254)*(bh+0.254), 2),
         "perimeter_mm": round(per, 2),
-        "opening_mm2": round(open_mm2, 2), "gold_mm2": round(gold_mm2, 2),
+        "opening_mm2": round(open_mm2, 2), "gold_mm2": round(gold_mm2, 2), "gold_all_mm2": round(gold_all, 2),
         "gold_cm2": round(gold_mm2/100, 3), "gold_pct": round(pct, 2),
         "band_mm2": round(band_mm2, 2), "band_cm2": round(band_mm2/100, 3),
         "band_share_pct": round(100*band_mm2/gold_mm2, 1) if gold_mm2 else 0,
@@ -129,8 +137,10 @@ def main(src, band=1.0, u="1U", as_json=False):
           % (area, area/100, bw, bh, (bw)*(bh), (bw*bh)/area))
     print("送厂板框（+0.254 线宽） %.3f mm   周长 %.2f mm   重量 %.1f g" % (
         max(bw, bh)+0.254, per, area*1.6/1000*1.85))
-    print("开窗面积 %.2f mm²   沉金面积 %.2f mm² = %.3f cm²   占比 %.2f%%" % (
+    print("开窗面积 %.2f mm²   沉金（板上）%.2f mm² = %.3f cm²   占比 %.2f%%" % (
         open_mm2, gold_mm2, gold_mm2/100, pct))
+    print("沉金（Gerber 全图）%.2f mm² = %.3f cm²（比板上多 %.3f cm²，是压在板框外、会被铣掉的金带）" % (
+        gold_all, gold_all/100, (gold_all-gold_mm2)/100))
     print("沉金费：%.4f 元/片（%s，单价 %.1f 元/㎡%s）" % (
         fee, u, unit, "，超出 %.1f%% 加收" % over if over else "，未超 30% 不加收"))
     print("金带 %.2f mm 宽 × 周长 = %.2f mm² = 占沉金的 %.1f%%（改动它最省金）" % (
@@ -142,10 +152,12 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if not a:
         print(__doc__); sys.exit(2)
-    band = 1.0; u = "1U"; js = "--json" in a
+    band = 1.0; u = "1U"; js = "--json" in a; sc = 40.0
+    if "--sc" in a:
+        i = a.index("--sc"); sc = float(a[i+1]); del a[i:i+2]
     if "--band" in a:
         i = a.index("--band"); band = float(a[i+1]); del a[i:i+2]
     if "--u" in a:
         i = a.index("--u"); u = a[i+1]; del a[i:i+2]
     if "--json" in a: a.remove("--json")
-    main(a[0], band, u, js)
+    main(a[0], band, u, js, sc)

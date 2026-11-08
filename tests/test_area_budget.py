@@ -54,6 +54,7 @@ def test_enig_2u_is_double_rate():
 
 
 def test_band_share():
-    """金带 1.0 mm x 周长 282.85 = 282.85 mm²，占 7.45 cm² 沉金的 38%。"""
+    """金带 1.0 mm x 周长 282.85 = 282.85 mm²；但只有前半圈在板内：
+    板上沉金 5.73 cm² 里金带占 1.41 cm²（25%）。整圈宽度是第二大旋钮，涂鸦才是大头。"""
     band = 1.0*m.perimeter(72, 72, 3)
     assert band/m.board_area(72, 72, 3)*100 == pytest.approx(5.46, abs=0.02)
